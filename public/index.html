@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fcecf3">
+  <title>UZIS | Pacienti</title>
+  <script>
+    try {
+      if (localStorage.getItem('uzis-theme') === 'dark') {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand" aria-label="UZIS, pacienti">
+        <div class="brand-mark" aria-hidden="true">UZIS</div>
+        <!-- <div>
+          <div class="brand-name">UZIS</div>
+        </div> -->
+      </div>
+      <div class="header-actions">
+        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false">Tmavý režim</button>
+        <div id="status" class="status" data-state="pending" role="status" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="statusText">Připojování…</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="pageTitle">
+        <h1 id="pageTitle">Pacienti</h1>
+      </section>
+
+      <div class="workspace">
+        <nav class="workflow-menu" aria-label="Výběr úkonu">
+          <div class="workflow-tabs" role="tablist" aria-label="Úkony pro pacienta">
+            <button id="tab-id" class="workflow-tab" type="button" role="tab" aria-selected="true" aria-controls="panel-id" data-panel="panel-id">
+              <span class="tab-title">Podle ID</span>
+            </button>
+            <button id="tab-details" class="workflow-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-details" data-panel="panel-details" tabindex="-1">
+              <span class="tab-title">Podle jména</span>
+            </button>
+            <button id="tab-update" class="workflow-tab" type="button" role="tab" aria-selected="false" aria-controls="panel-update" data-panel="panel-update" tabindex="-1">
+              <span class="tab-title">Změna pojištění</span>
+            </button>
+          </div>
+        </nav>
+
+        <div class="main-column">
+          <section id="panel-id" class="panel" role="tabpanel" aria-labelledby="tab-id">
+            <h2>Vyhledat podle ID</h2>
+            <form id="form">
+              <div class="form-grid">
+                <div class="field field-full">
+                  <label for="patientId">ID pacienta</label>
+                  <input id="patientId" name="patientId" required autocomplete="off" placeholder="ID pacienta">
+                </div>
+              </div>
+              <div class="form-footer"><button class="action-button" type="submit">Vyhledat <span class="arrow" aria-hidden="true">&#8594;</span></button></div>
+            </form>
+          </section>
+
+          <section id="panel-details" class="panel" role="tabpanel" aria-labelledby="tab-details" hidden>
+            <h2>Vyhledat podle jména</h2>
+            <form id="nameForm">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="givenName">Jméno</label>
+                  <input id="givenName" name="jmeno" required autocomplete="given-name" placeholder="Jméno">
+                </div>
+                <div class="field">
+                  <label for="surname">Příjmení</label>
+                  <input id="surname" name="prijmeni" required autocomplete="family-name" placeholder="Příjmení">
+                </div>
+                <div class="field field-full">
+                  <label for="birthDate">Datum narození</label>
+                  <input id="birthDate" name="datumNarozeni" type="date" required>
+                </div>
+              </div>
+              <div class="form-footer"><button class="action-button" type="submit">Vyhledat <span class="arrow" aria-hidden="true">&#8594;</span></button></div>
+            </form>
+          </section>
+
+          <section id="panel-update" class="panel update-panel" role="tabpanel" aria-labelledby="tab-update" hidden>
+            <h2>Změnit číslo pojištěnce</h2>
+            <form id="updateForm">
+              <div class="form-grid">
+                <div class="field">
+                  <label for="updatePatientId">ID pacienta</label>
+                  <input id="updatePatientId" name="pacientId" required autocomplete="off" placeholder="ID pacienta">
+                </div>
+                <div class="field">
+                  <label for="insuranceNumber">Nové číslo pojištěnce</label>
+                  <input id="insuranceNumber" name="cisloPojistence" required autocomplete="off" placeholder="Číslo pojištěnce">
+                </div>
+                <div class="field field-full">
+                  <label for="updateBirthDate">Datum narození</label>
+                  <input id="updateBirthDate" name="datumNarozeni" type="date" required>
+                </div>
+                <p class="caution">Změna se odešle do UZIS. Ověřte údaje.</p>
+              </div>
+              <div class="form-footer"><button class="action-button" type="submit">Uložit změnu <span class="arrow" aria-hidden="true">&#8594;</span></button></div>
+            </form>
+          </section>
+
+          <section class="response" aria-labelledby="responseTitle">
+            <div class="response-head">
+              <div class="response-heading">
+                <h2 id="responseTitle">Odpověď</h2>
+                <div id="responseMeta">Bez požadavku</div>
+              </div>
+              <button id="jsonButton" class="json-button" type="button" hidden>JSON</button>
+            </div>
+            <div class="response-body">
+              <div id="result" aria-live="polite"><p class="result-empty">Zatím bez odpovědi.</p></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+  <dialog id="jsonDialog" class="json-dialog" aria-labelledby="jsonTitle">
+    <div class="dialog-head">
+      <h2 id="jsonTitle">Surová odpověď JSON</h2>
+      <button id="closeJson" class="dialog-close" type="button" aria-label="Zavřít">&times;</button>
+    </div>
+    <pre id="rawJson"></pre>
+  </dialog>
+
+  <script>
+    const status = document.querySelector('#status');
+    const statusText = document.querySelector('#statusText');
+    const output = document.querySelector('#result');
+    const responseMeta = document.querySelector('#responseMeta');
+    const jsonButton = document.querySelector('#jsonButton');
+    const jsonDialog = document.querySelector('#jsonDialog');
+    const rawJson = document.querySelector('#rawJson');
+    const tabs = [...document.querySelectorAll('[role="tab"]')];
+    const themeToggle = document.querySelector('#themeToggle');
+    const fieldLabels = {
+      pacientId: 'ID pacienta',
+      cisloPojistence: 'Číslo pojištěnce',
+      datumNarozeni: 'Datum narození',
+      jmeno: 'Jméno',
+      prijmeni: 'Příjmení',
+      rodneCislo: 'Rodné číslo',
+      nrzpCislo: 'Číslo NRZP',
+      pcz: 'Pracoviště',
+      titulPred: 'Titul před jménem',
+      titulZa: 'Titul za jménem',
+      datumUmrti: 'Datum úmrtí',
+      zemeNarozeniKod: 'Kód země narození',
+      mistoNarozeniNazev: 'Místo narození',
+      obecNarozeniRuianId: 'ID obce narození',
+      obvodNarozeniRuianId: 'ID obvodu narození',
+      jeCizinec: 'Cizinec',
+      pohlavi: 'Pohlaví',
+      cisloObcanskehoPrukazu: 'Číslo občanského průkazu',
+      cisloPasu: 'Číslo pasu',
+      zemeObcanstviKod: 'Kód země občanství',
+      zdravotniPojistovnaKod: 'Zdravotní pojišťovna',
+      kontaktniMobilniTelefon: 'Mobilní telefon',
+      kontaktniEmail: 'E-mail',
+      kontaktniPevnaLinka: 'Pevná linka',
+      pobytMesto: 'Město pobytu',
+      pobytPsc: 'PSČ pobytu',
+      notifikovatEmail: 'Upozornění e-mailem',
+      notifikovatSms: 'Upozornění SMS',
+      poznamka: 'Poznámka',
+      error: 'Chyba',
+      detail: 'Podrobnosti',
+      message: 'Zpráva',
+      success: 'Úspěch',
+      status: 'Stav',
+      data: 'Data',
+      pacienti: 'Pacienti',
+      id: 'ID',
+      kod: 'Kód',
+    };
+
+    fetch('/api/status').then(response => response.json()).then(service => {
+      status.dataset.state = 'ready';
+      statusText.textContent = service.clientCertificateConfigured
+        ? 'Připojeno'
+        : 'Odpojeno';
+    }).catch(() => {
+      status.dataset.state = 'error';
+      statusText.textContent = 'Služba nedostupná';
+    });
+
+    function setTheme(theme) {
+      const isDark = theme === 'dark';
+      document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+      themeToggle.setAttribute('aria-pressed', String(isDark));
+      themeToggle.textContent = isDark ? 'Světlý režim' : 'Tmavý režim';
+      document.querySelector('meta[name="theme-color"]').content = isDark ? '#171d27' : '#f5f7fa';
+      try {
+        localStorage.setItem('uzis-theme', isDark ? 'dark' : 'light');
+      } catch {}
+    }
+
+    setTheme(document.documentElement.dataset.theme);
+    themeToggle.addEventListener('click', () => {
+      setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+
+    function selectPanel(tab) {
+      for (const item of tabs) {
+        const selected = item === tab;
+        item.setAttribute('aria-selected', String(selected));
+        item.tabIndex = selected ? 0 : -1;
+        document.querySelector(`#${item.dataset.panel}`).hidden = !selected;
+      }
+    }
+
+    for (const [index, tab] of tabs.entries()) {
+      tab.addEventListener('click', () => selectPanel(tab));
+      tab.addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const nextIndex = event.key === 'Home' ? 0
+          : event.key === 'End' ? tabs.length - 1
+            : (index + (event.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length;
+        tabs[nextIndex].focus();
+        selectPanel(tabs[nextIndex]);
+      });
+    }
+
+    function fieldLabel(key) {
+      return fieldLabels[key] || String(key)
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replaceAll('_', ' ')
+        .replace(/^./, character => character.toLocaleUpperCase('cs-CZ'));
+    }
+
+    function displayScalar(value) {
+      if (value === null || value === undefined || value === '') return '—';
+      if (typeof value === 'boolean') return value ? 'Ano' : 'Ne';
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}(?:T.*)?$/.test(value)) {
+        const date = new Date(value);
+        if (!Number.isNaN(date.getTime())) {
+          return new Intl.DateTimeFormat('cs-CZ').format(date);
+        }
+      }
+      return String(value);
+    }
+
+    function appendField(fields, key, value) {
+      const field = document.createElement('div');
+      field.className = 'answer-field';
+      const label = document.createElement('dt');
+      label.textContent = fieldLabel(key);
+      const content = document.createElement('dd');
+      content.textContent = displayScalar(value);
+      field.append(label, content);
+      fields.append(field);
+    }
+
+    function renderObject(target, value, depth = 0) {
+      const fields = document.createElement('dl');
+      fields.className = 'answer-fields';
+      for (const [key, item] of Object.entries(value)) {
+        if (Array.isArray(item)) {
+          const group = document.createElement('section');
+          group.className = 'answer-group';
+          const heading = document.createElement('h3');
+          heading.textContent = fieldLabel(key);
+          group.append(heading);
+          renderArray(group, item, depth + 1);
+          target.append(group);
+        } else if (item && typeof item === 'object') {
+          const group = document.createElement('section');
+          group.className = 'answer-group';
+          const heading = document.createElement('h3');
+          heading.textContent = fieldLabel(key);
+          group.append(heading);
+          if (depth < 3) renderObject(group, item, depth + 1);
+          else appendField(group, key, JSON.stringify(item));
+          target.append(group);
+        } else {
+          appendField(fields, key, item);
+        }
+      }
+      if (fields.childElementCount) target.append(fields);
+    }
+
+    function renderArray(target, values, depth = 0) {
+      if (!values.length) {
+        const empty = document.createElement('p');
+        empty.className = 'result-message';
+        empty.textContent = 'Žádné záznamy.';
+        target.append(empty);
+        return;
+      }
+
+      const list = document.createElement('div');
+      list.className = 'answer-list';
+      const objects = values.filter(value => value && typeof value === 'object' && !Array.isArray(value));
+      if (depth === 0) {
+        const count = document.createElement('p');
+        count.className = 'result-count';
+        count.textContent = `Počet záznamů: ${values.length}`;
+        target.append(count);
+      }
+
+      for (const [index, value] of values.entries()) {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          const record = document.createElement('article');
+          record.className = 'answer-record';
+          if (depth === 0) {
+            const name = [value.jmeno, value.prijmeni].filter(Boolean).join(' ');
+            const title = document.createElement('h3');
+            title.textContent = name || `Záznam ${index + 1}`;
+            record.append(title);
+          }
+          renderObject(record, value, depth + 1);
+          list.append(record);
+        } else if (Array.isArray(value)) {
+          const nested = document.createElement('div');
+          nested.className = 'answer-item';
+          renderArray(nested, value, depth + 1);
+          list.append(nested);
+        } else {
+          const chip = document.createElement('span');
+          chip.className = 'answer-chip';
+          chip.textContent = displayScalar(value);
+          list.append(chip);
+        }
+      }
+      if (objects.length || values.some(Array.isArray)) target.append(list);
+      else {
+        const scalarList = document.createElement('div');
+        scalarList.className = 'answer-scalar-list';
+        scalarList.append(...list.childNodes);
+        target.append(scalarList);
+      }
+    }
+
+    function renderResponse(value) {
+      output.replaceChildren();
+      if (Array.isArray(value)) {
+        renderArray(output, value);
+      } else if (value && typeof value === 'object') {
+        renderObject(output, value);
+      } else {
+        const message = document.createElement('p');
+        message.className = 'result-message';
+        message.textContent = displayScalar(value);
+        output.append(message);
+      }
+      rawJson.textContent = JSON.stringify(value, null, 2);
+      jsonButton.hidden = false;
+    }
+
+    function renderMessage(message) {
+      output.replaceChildren();
+      const text = document.createElement('p');
+      text.className = 'result-message';
+      text.textContent = message;
+      output.append(text);
+      rawJson.textContent = '';
+      jsonButton.hidden = true;
+    }
+
+    jsonButton.addEventListener('click', () => jsonDialog.showModal());
+    document.querySelector('#closeJson').addEventListener('click', () => jsonDialog.close());
+    jsonDialog.addEventListener('click', event => {
+      if (event.target === jsonDialog) jsonDialog.close();
+    });
+
+    async function sendRequest(form, requestUrl, options = {}) {
+      const button = form.querySelector('button');
+      button.disabled = true;
+      renderMessage('Čekám na odpověď…');
+      responseMeta.textContent = 'Probíhá požadavek';
+      try {
+        const response = await fetch(requestUrl, options);
+        const text = await response.text();
+        let body;
+        try {
+          body = JSON.parse(text);
+          renderResponse(body);
+        } catch {
+          renderMessage(text || 'Prázdná odpověď.');
+        }
+        responseMeta.textContent = `HTTP ${response.status}`;
+      } catch (error) {
+        renderMessage(`Požadavek selhal: ${error.message}`);
+        responseMeta.textContent = 'Chyba připojení';
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    document.querySelector('#form').addEventListener('submit', event => {
+      event.preventDefault();
+      const id = document.querySelector('#patientId').value.trim();
+      sendRequest(event.currentTarget, `/api/patient?pacientId=${encodeURIComponent(id)}`);
+    });
+
+    document.querySelector('#nameForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const query = new URLSearchParams({
+        jmeno: document.querySelector('#givenName').value.trim(),
+        prijmeni: document.querySelector('#surname').value.trim(),
+        datumNarozeni: document.querySelector('#birthDate').value,
+      });
+      sendRequest(event.currentTarget, `/api/patient/search?${query}`);
+    });
+
+    document.querySelector('#updateForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const data = {
+        pacientId: document.querySelector('#updatePatientId').value.trim(),
+        cisloPojistence: document.querySelector('#insuranceNumber').value.trim(),
+        datumNarozeni: document.querySelector('#updateBirthDate').value,
+      };
+      if (!confirm(`Změnit číslo pojištěnce pacienta ${data.pacientId}?`)) return;
+      sendRequest(event.currentTarget, '/api/patient/insurance-number', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+    });
+  </script>
+</body>
+</html>
