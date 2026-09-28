@@ -103,7 +103,7 @@
                   <label for="updateBirthDate">Datum narození</label>
                   <input id="updateBirthDate" name="datumNarozeni" type="date" required>
                 </div>
-                <p class="caution">Změna se odešle do UZIS. Ověřte údaje.</p>
+                   
               </div>
               <div class="form-footer"><button class="action-button" type="submit">Uložit změnu <span class="arrow" aria-hidden="true">&#8594;</span></button></div>
             </form>
@@ -403,17 +403,25 @@
     document.querySelector('#form').addEventListener('submit', event => {
       event.preventDefault();
       const id = document.querySelector('#patientId').value.trim();
-      sendRequest(event.currentTarget, `/api/patient?pacientId=${encodeURIComponent(id)}`);
+      sendRequest(event.currentTarget, '/api/patient', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pacientId: id }),
+      });
     });
 
     document.querySelector('#nameForm').addEventListener('submit', event => {
       event.preventDefault();
-      const query = new URLSearchParams({
+      const data = {
         jmeno: document.querySelector('#givenName').value.trim(),
         prijmeni: document.querySelector('#surname').value.trim(),
         datumNarozeni: document.querySelector('#birthDate').value,
+      };
+      sendRequest(event.currentTarget, '/api/patient/search', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(data),
       });
-      sendRequest(event.currentTarget, `/api/patient/search?${query}`);
     });
 
     document.querySelector('#updateForm').addEventListener('submit', event => {
